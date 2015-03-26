@@ -272,7 +272,7 @@ class ShardAuditor:
 
 
     def get_tables(self, schema):
-        self.db.execute("show tables in " + schema)
+        self.db.execute("show full tables in " + schema + " where table_type != 'VIEW'")
         rows = self.db.fetchall()
         tables = []
         for row in rows:
@@ -286,6 +286,7 @@ class ShardAuditor:
         res = self.db.fetchone()
         show = res[1]
         create_parts = show.split("\n")
+        table_data = {}
         if re.match('CREATE TABLE', show):
             engine = None
             key_entries = {}
