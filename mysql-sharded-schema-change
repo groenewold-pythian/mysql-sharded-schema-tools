@@ -410,7 +410,7 @@ class Worker(multiprocessing.Process):
 
     def online(self, item):
         global proc, p1, p2
-        print "running online for shard: " + str(item['item'])
+        print "running online for shard: " + str(item['host'])
 
         command = self.manager.settings.PT_OSC
         for k,v in self.manager.settings.PT_OSC_OPTIONS.iteritems():
