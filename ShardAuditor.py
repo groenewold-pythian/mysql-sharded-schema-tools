@@ -183,7 +183,8 @@ class ShardAuditor:
             if table not in baseline_schema_data.keys():
                 self.log_error("TABLE", "EXTRANEOUS", hostconfig['host'], hostconfig['port'], schemaname, table, None, None)
                 #print "EXTRANEOUS TABLE ERROR: " + table + " found in " + schemaname + " on " + hostconfig['host']
-
+                print "mysqldump " + schemaname + " " + table + " -h" + hostconfig['host']
+                print "mysql " + " -h" + hostconfig['host'] + " -e 'drop table " + schemaname + "." + table + ";'"
 
 
 
