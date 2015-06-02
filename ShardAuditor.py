@@ -184,7 +184,7 @@ class ShardAuditor:
                 self.log_error("TABLE", "EXTRANEOUS", hostconfig['host'], hostconfig['port'], schemaname, table, None, None)
                 #print "EXTRANEOUS TABLE ERROR: " + table + " found in " + schemaname + " on " + hostconfig['host']
                 print "mysqldump " + schemaname + " " + table + " -h" + hostconfig['host'] + " > /var/marin/archive/schema_audit_`date +%Y%m%d`/" + hostconfig['host'] + "_" + schemaname + "_" + table + ".sql"
-                rint "mysql " + "-h" + hostconfig['host'] + " -e 'drop table if exists " + schemaname + "." + table + ";'"
+                print "mysql " + "-h" + hostconfig['host'] + " -e 'drop table if exists " + schemaname + "." + table + ";'"
 
 
 
