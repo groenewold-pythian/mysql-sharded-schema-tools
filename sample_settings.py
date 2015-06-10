@@ -100,6 +100,29 @@ AUDITOR_LOGDB_CREDENTIALS = {
     'dbname': 'shard_auditor'
 }
 
+# This options affect shard auditor, and allow ignoring tables and/or columns on a per-host or global basis. For example, the 
+# following options would ignore all columns of test_table1 on all shards. It also would ignore test_col1 and test_col2 columns 
+# of test_table2 on shard testhost:3306 only
+# 
+#SHARD_AUDITOR_SETTINGS = {
+#    'ignore_tables': {
+#        'test_table1': {
+#            'ignore_all': True
+#            }
+#        },
+#    'hosts': {
+#        'testhost:3306': {
+#            'ignore_tables': {
+#                'test_table2': {
+#                    'columns': [ 'test_col1', 'test_col2' ]
+#                   }
+#            },
+#            'ignore_schemas': [
+#                'test_schema1'
+#            ]
+#        }
+#    }
+#}
+
 SHARD_AUDITOR_SETTINGS = {
 }
-
