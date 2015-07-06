@@ -10,13 +10,23 @@ LOCATOR_DB_CREDENTIALS = {
 
 # column values can be a string column name or can be valid sql that can be used in the select fields
 # eg, if the fqdn is separated into separate host/sub/domain columns, you can set the value as a concat:  'host_col': 'concat(hostname,".",subdomain,".",domain)'
+# Locator table example:
+# CREATE TABLE `locator` (
+#  `id` int auto_increment not null primary key,
+#  `environment` varchar(255) not null,
+#  `dbname` varchar(255) NOT NULL,
+#  `hostname` varchar(255) NOT NULL,
+#  `port` int(11) NOT NULL DEFAULT '3306',
+#  `slave_host` varchar(50) DEFAULT NULL,
+#  `slave_port` int(11) DEFAULT NULL
+#);
 LOCATOR_TABLE = {
     # this is the table that can be used to lookup where shards are located
     'tablename': 'locator',
     # this is the column that uniquely identifies each shard (should be unique)
     'id_col': 'id',
     # this is the schema name of the specific shard
-    'shardname_col': 'shard',
+    'shardname_col': 'dbname',
     # this is the column that holds the hostname or ip address of the host containing the shard
     'host_col': 'hostname',
     # column that holds the port number for the shard host
@@ -28,6 +38,7 @@ LOCATOR_TABLE = {
     'slave_port_col': "NULL",
     # this is a where clause that gets appended to the select query from the shard locator table
     'where_clause': None
+    # example: 'where_clause': 'where environment = "prod"'
 }
 # The locator query is built as follows, so any values in LOCATOR_TABLE that make this a valid query and return the same number of columns in right order are valid
 # sql = "select " + settings.LOCATOR_TABLE['shardname_col'] + ", " + settings.LOCATOR_TABLE['host_col'] + ", " \
