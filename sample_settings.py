@@ -13,7 +13,9 @@ LOCATOR_DB_CREDENTIALS = {
 LOCATOR_TABLE = {
     # this is the table that can be used to lookup where shards are located
     'tablename': 'locator',
-    # this is the schema name of the specific shard (this should be unique)
+    # this is the column that uniquely identifies each shard (should be unique)
+    'id_col': 'id',
+    # this is the schema name of the specific shard
     'shardname_col': 'shard',
     # this is the column that holds the hostname or ip address of the host containing the shard
     'host_col': 'hostname',
