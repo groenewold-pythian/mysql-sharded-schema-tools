@@ -369,7 +369,7 @@ class Worker(multiprocessing.Process):
 
 
     def direct(self, item):
-        print "running direct for shard: " + item['shard_id']
+        print "running direct for shard: " + str(item['shard_id'])
         try:
             dbconn = MySQLdb.connect(host=item['host'],
                                  port=item['port'],

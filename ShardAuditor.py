@@ -294,7 +294,7 @@ class ShardAuditor:
 
                 # process column definitions
                 if re.match(r'\s*`', create_parts[i]):
-                    m = re.match(r'\s*`(?P<name>.*?)`\s*(?P<type>\w+(:?\([0-9]*\))?)\s*(?P<extra>.*?),?', create_parts[i])
+		    m = re.match(r'\s*`(?P<name>.*?)`\s*(?P<type>\w+(:?\([0-9,]*\))?)\s*(?P<extra>.*)', create_parts[i])
                     col_entries[m.group('name')] = {
                         'type': m.group('type'),
                         'extra': m.group('extra')
