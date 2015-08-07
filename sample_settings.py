@@ -24,9 +24,9 @@ LOCATOR_TABLE = {
     # this is the table that can be used to lookup where shards are located
     'tablename': 'locator',
     # this is the column that uniquely identifies each shard (should be unique)
-    'id_col': 'id',
-    # this is the schema name of the specific shard
-    'shardname_col': 'dbname',
+    'shardid_col': 'id',
+    # this is the schema name of the specific shard (this should be unique)
+    'dbname_col': 'dbname',
     # this is the column that holds the hostname or ip address of the host containing the shard
     'host_col': 'hostname',
     # column that holds the port number for the shard host
@@ -41,14 +41,14 @@ LOCATOR_TABLE = {
     # example: 'where_clause': 'where environment = "prod"'
 }
 # The locator query is built as follows, so any values in LOCATOR_TABLE that make this a valid query and return the same number of columns in right order are valid
-# sql = "select " + settings.LOCATOR_TABLE['shardname_col'] + ", " + settings.LOCATOR_TABLE['host_col'] + ", " \
+# sql = "select " + settings.LOCATOR_TABLE['shardid_col'] + ", " + settings.LOCATOR_TABLE['dbname_col'] + ", " + settings.LOCATOR_TABLE['host_col'] + ", " \
 #            + settings.LOCATOR_TABLE['port_col'] + " from " + settings.LOCATOR_TABLE['tablename'] + whereclause
 
 
 
 
 # path to pt-online-schema-change, if it has been installed with a package manger then default should be /usr/local/bin, /usr/bin or /bin
-PT_OSC = '/usr/local/bin/pt-online-schema-change'
+PT_OSC = '/usr/bin/pt-online-schema-change'
 
 # This contains default set of options to send to pt-online-schema-change
 # if the option should not be sent at all, comment it out, if the option is a flag type option (no parameter), set its value to "" (empty string)
@@ -79,6 +79,7 @@ SHARD_DB_CREDENTIALS = {
 
 # this is the credentials for the host that holds the model shard schema
 MODEL_SHARD_DB_CREDENTIALS = {
+    'shard_id': -1,
     'user': 'root',
     'password': '',
     'host': 'localhost',
