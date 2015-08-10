@@ -215,6 +215,9 @@ class ShardAuditor:
                 if column in audit_cols:
                     audit_cols.remove(column)
 
+        fix_stmt = "/* msst - " + hostconfig['host'] + " */" + " ALTER TABLE "  + schemaname + "." + tablename + " "
+        fix_stmt_init_len = len(fix_stmt)
+
         if base_cols != audit_cols and sorted(base_cols) == sorted(audit_cols):
             self.log_error("COLUMN", "ORDER", hostconfig['host'], hostconfig['port'], schemaname, tablename, None, "columns out of order")
             #print "COLUMN ORDER ERROR: Columns are out of order on " + hostconfig['host'] + " " + schemaname + "." + tablename
@@ -223,25 +226,30 @@ class ShardAuditor:
             if col not in audit_cols:
                 self.log_error("COLUMN", "MISSING", hostconfig['host'], hostconfig['port'], schemaname, tablename, col, "not found")
                 #print "MISSING COLUMN ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + col + " not found"
+                fix_stmt += " ADD COLUMN " + col + " " + baseline_table_data['columns'][col]['type'] + " " + baseline_table_data['columns'][col]['extra'] + ","
             else:
                 if audit_table_data['columns'][col]['type'] != baseline_table_data['columns'][col]['type']:
                     self.log_error("COLUMN", "TYPE", hostconfig['host'], hostconfig['port'], schemaname, tablename, col, "defined as " + audit_table_data['columns'][col]['type'] + " but should be " + baseline_table_data['columns'][col]['type'])
                     #print "COLUMN TYPE ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + col \
                     #      + " defined as " + audit_table_data['columns'][col]['type'] + " but should be " + baseline_table_data['columns'][col]['type']
+                    fix_stmt += " MODIFY " + col + " " + baseline_table_data['columns'][col]['type'] + " " + baseline_table_data['columns'][col]['extra'] + ","
                 if audit_table_data['columns'][col]['extra'] != baseline_table_data['columns'][col]['extra']:
                     self.log_error("COLUMN", "TYPE", hostconfig['host'], hostconfig['port'], schemaname, tablename, col, "defined as " + audit_table_data['columns'][col]['extra'] + " but should be " + baseline_table_data['columns'][col]['extra'])
                     #print "COLUMN TYPE ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + col \
                     #      + " defined as " + audit_table_data['columns'][col]['extra'] + " but should be " + baseline_table_data['columns'][col]['extra']
+                    fix_stmt += " MODIFY " + col + " " + baseline_table_data['columns'][col]['type'] + " " + baseline_table_data['columns'][col]['extra'] + ","
 
         for col in audit_cols:
             if col not in base_cols:
                 self.log_error("COLUMN", "EXTRANEOUS", hostconfig['host'], hostconfig['port'], schemaname, tablename, col, "found extra")
                 #print "EXTRANEOUS COLUMN ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + col + " found extra"
+                fix_stmt += " DROP COLUMN " + col + ","
 
         for index in baseline_table_data['indexes']:
             if index not in audit_table_data['indexes']:
                 self.log_error("INDEX", "MISSING", hostconfig['host'], hostconfig['port'], schemaname, tablename, index, "not found")
                 #print "INDEX MISSING ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + index + " not found"
+                fix_stmt += " ADD " + baseline_table_data['indexes'][index]['create_syntax'] + ","
             else:
                 if baseline_table_data['indexes'][index]['type'] != audit_table_data['indexes'][index]['type']:
                     base_idx_type = baseline_table_data['indexes'][index]['type'] if baseline_table_data['indexes'][index]['type'] is not None else "regular"
@@ -249,15 +257,22 @@ class ShardAuditor:
                     self.log_error("INDEX", "TYPE", hostconfig['host'], hostconfig['port'], schemaname, tablename, index, " defined as " + audit_idx_type + " but should be " + base_idx_type)
                     #print "INDEX TYPE ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + index + " defined as " \
                     #      + audit_idx_type + " but should be " + base_idx_type
+                    fix_stmt += " DROP INDEX " + index + ", ADD " + baseline_table_data['indexes'][index]['create_syntax'] + ","
                 if baseline_table_data['indexes'][index]['cols'] != audit_table_data['indexes'][index]['cols']:
                     self.log_error("INDEX", "COLUMN", hostconfig['host'], hostconfig['port'], schemaname, tablename, index, " on " + audit_table_data['indexes'][index]['cols'] + " but should be on " + baseline_table_data['indexes'][index]['cols'])
                     #print "INDEX COLUMN ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + index + " on " \
                     #      + audit_table_data['indexes'][index]['cols'] + " but should be on " + baseline_table_data['indexes'][index]['cols']
+                    fix_stmt += " DROP INDEX " + index + ", ADD " + baseline_table_data['indexes'][index]['create_syntax'] + ","
 
         for index in audit_table_data['indexes']:
             if index not in baseline_table_data['indexes']:
                 self.log_error("INDEX", "EXTRA", hostconfig['host'], hostconfig['port'], schemaname, tablename, index, "found extra")
                 #print "EXTRA INDEX ERROR: " + hostconfig['host'] + " " + schemaname + "." + tablename + "." + index + " found extra"
+                fix_stmt +=  " DROP INDEX " + index + ","
+
+        # print fix statement only if needed
+        if(len(fix_stmt) != fix_stmt_init_len):
+            print fix_stmt[:-1] + ";"
 
 
     def get_schemas(self):
@@ -294,11 +309,14 @@ class ShardAuditor:
 
                 # process column definitions
                 if re.match(r'\s*`', create_parts[i]):
-		    m = re.match(r'\s*`(?P<name>.*?)`\s*(?P<type>\w+(:?\([0-9,]*\))?)\s*(?P<extra>.*)', create_parts[i])
+                    m = re.match(r'\s*`(?P<name>.*?)`\s*(?P<type>\w+(:?\([0-9,]*\))?)\s*(?P<extra>.*)', create_parts[i])
                     col_entries[m.group('name')] = {
                         'type': m.group('type'),
                         'extra': m.group('extra')
                     }
+                    # remove trailing ,
+                    if col_entries[m.group('name')]['extra'][-1] == ',':
+                        col_entries[m.group('name')]['extra'] = col_entries[m.group('name')]['extra'][:-1]
 
                 # get indexes
                 if re.match(r'\s*(PRIMARY|FULLTEXT|UNIQUE)?\s*KEY', create_parts[i]):
@@ -307,13 +325,21 @@ class ShardAuditor:
                     if m.group('type') == 'PRIMARY':
                         key_entries["PRIMARY"] = {
                             'type': 'PRIMARY',
-                            'cols': m.group('cols')
+                            'cols': m.group('cols'),
+                            'create_syntax': create_parts[i]
                         }
+                        # remove trailing , 
+                        if key_entries['PRIMARY']['create_syntax'][-1] == ',':
+                            key_entries['PRIMARY']['create_syntax'] = key_entries['PRIMARY']['create_syntax'][:-1]
                     else:
                         key_entries[m.group('ix_name')] = {
                             'type': m.group('type'),
-                            'cols': m.group('cols')
+                            'cols': m.group('cols'),
+                            'create_syntax': create_parts[i]
                         }
+                        # remove trailing ,
+                        if key_entries[m.group('ix_name')]['create_syntax'][-1] == ',':
+                            key_entries[m.group('ix_name')]['create_syntax'] = key_entries[m.group('ix_name')]['create_syntax'][:-1]
 
                 if re.match(r'\) ENGINE', create_parts[i]):
                     m = re.match(r'.*?ENGINE=(?P<engine>\w+)\s.*', create_parts[i])
