@@ -163,11 +163,13 @@ class ShardAuditor:
             if table not in audit_schema_data.keys():
                 self.log_error("TABLE", "MISSING", hostconfig['host'], hostconfig['port'], schemaname, table, None, "not found")
                 #print "MISSING TABLE ERROR: " + table + " not found in " + schemaname + " on " + hostconfig['host']
+                print "/* msst - " + hostconfig['host'] + " */ " + baseline_schema_data[table]['show'].replace('\n', '').replace('\r', '') + ";"
             else:
                 if audit_schema_data[table]['engine'] != baseline_schema_data[table]['engine']:
                     self.log_error("TABLE", "ENGINE", hostconfig['host'], hostconfig['port'], schemaname, table, None, "is " + audit_schema_data[table]['engine'] + " and should be " + baseline_schema_data[table]['engine'])
                     #print "TABLE ENGINE ERROR: on " + hostconfig['host'] + ": engine is " + \
                     #      audit_schema_data[table]['engine'] + " and should be " + baseline_schema_data[table]['engine']
+                    print "/* msst - " + hostconfig['host'] + " */ " + "ALTER TABLE " + schemaname + "." + tablename + " ENGINE=" + baseline_schema_data[table]['engine'] + ";"
                 self.audit_table(baseline_schema_data[table], audit_schema_data[table], hostconfig, schemaname, table)
 
         # look for extraneous tables
@@ -183,7 +185,7 @@ class ShardAuditor:
             if table not in baseline_schema_data.keys():
                 self.log_error("TABLE", "EXTRANEOUS", hostconfig['host'], hostconfig['port'], schemaname, table, None, None)
                 #print "EXTRANEOUS TABLE ERROR: " + table + " found in " + schemaname + " on " + hostconfig['host']
-
+                print "/* msst - " + hostconfig['host'] + " */ " + "DROP TABLE IF EXISTS " + schemaname + "." + table + ";"
 
 
     def audit_table(self, baseline_table_data, audit_table_data, hostconfig, schemaname, tablename):
@@ -348,7 +350,8 @@ class ShardAuditor:
             table_data = {
                 "columns": col_entries,
                 "indexes": key_entries,
-                "engine": engine
+                "engine": engine,
+                "show": show
             }
     
         return table_data
